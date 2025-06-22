@@ -1,50 +1,26 @@
 const express = require('express');
-const socketio = require('socket.io');
+const socketIO = require('socket.io');
 const http = require('http');
-const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketio(server);
+const io = socketIO(server);
 
-// Serve static files
-app.use(express.static('index.html','style.css'));
-
-// Store chat history
-const chatHistory = [];
+app.use(express.static(__dirname));
 
 io.on('connection', (socket) => {
-    console.log('New WebSocket connection');
+  console.log('A user connected');
 
-    // Send chat history to new user
-    socket.emit('history', chatHistory);
+  socket.on('chat message', (msg) => {
+    io.emit('chat message', msg); // Broadcast to all clients
+  });
 
-    // Listen for new messages
-    socket.on('sendMessage', (message, callback) => {
-        const msg = {
-            id: Date.now(),
-            text: message.text,
-            user: message.user,
-            timestamp: new Date().toLocaleTimeString()
-        };
-
-        // Add to history (limit to 100 messages)
-        chatHistory.push(msg);
-        if (chatHistory.length > 100) chatHistory.shift();
-
-        // Broadcast to all clients
-        io.emit('message', msg);
-        
-        // Acknowledge
-        callback();
-    });
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected');
-    });
+  socket.on('disconnect', () => {
+    console.log('User disconnected');
+  });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
